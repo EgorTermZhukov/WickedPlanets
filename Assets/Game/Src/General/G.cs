@@ -6,5 +6,6 @@ namespace Game.Src.General
         public static PlayerCursor PlayerCursor;
         public static Feel Feel;
         public static Ticker Ticker;
+        public static ParticleController ParticleController;
     }
 }

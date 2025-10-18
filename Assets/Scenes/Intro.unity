@@ -272,6 +272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7468ffac4a7421390493517f4c2fa60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Game.Src.General.Feel
+  CameraInitialPosition: {x: 0, y: 0, z: 0}
   FadeSprite: {fileID: 0}
   Fades: []
 --- !u!4 &356280467
@@ -706,7 +707,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1758978095
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -782,7 +783,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -2064810313
-  m_SortingLayer: 1
+  m_SortingLayer: 2
   m_SortingOrder: 10
   m_Sprite: {fileID: -4750761433519615375, guid: 2b70452503e756d0097b0a5b14c32881, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

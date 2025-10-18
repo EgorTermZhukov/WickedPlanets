@@ -41,6 +41,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Planet
+    uniqueID: 1997566691
+    locked: 0
   - name: Cursor
     uniqueID: 2230156983
     locked: 0
