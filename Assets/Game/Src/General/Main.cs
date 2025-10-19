@@ -15,16 +15,16 @@ namespace Game.Src.General
         public Interactor Interactor;
         public PlanetView PlanetPfb;
         public PlanetHandView PlanetHandPfb;
+        public OrbitManager OrbPfb;
         public OrbitManager Orbits;
         public Hand Hand;
+        public DrawpileManager Drawpile;
+        public GameObject CombatUI;
+        
 
-        public int StepsAvailable = 10;
-        public int CurrentSteps = 10;
-
-        public TMP_Text SunHealthText;
-
-        public int SunHealth = 20;
-        public bool Advancing = false;
+        // use this to add planets
+        public PlanetBag PlanetBag;
+        public EncounterManager Encounter;
         private void Awake()
         {
             G.Main = this;
@@ -33,6 +33,7 @@ namespace Game.Src.General
         }
         private void Start()
         {
+            PlanetBag = new PlanetBag();
             CMS.Init();
             AudioController.Instance.SetLoopAndPlay("SpaceAmbient");
         }
@@ -46,16 +47,46 @@ namespace Game.Src.General
             {
                 SceneManager.LoadScene("Scenes/Intro");
             }
-
             else if (Input.GetKeyDown(KeyCode.Q))
             {
                 var planet = GetRandomPlanet();
                 Hand.Add(planet);
             }
-            else if (Input.GetKeyDown(KeyCode.Space) && !Advancing)
+            else if (Input.GetKeyDown(KeyCode.S))
+            {
+                var combatState = CreateCombatState();
+                StartCoroutine(Encounter.Setup(combatState, OrbPfb));
+            }
+            else if (Input.GetKeyDown(KeyCode.Space))
             {
                 StartCoroutine(AdvanceAll());
             }
+        }
+
+        public void ShowCombatUI()
+        {
+            CombatUI.SetActive(true);
+        }
+
+        public EncounterState CreateCombatState()
+        {
+            var encounterState = new EncounterState();
+            var enemyModel = CMS.Get<CMSEntity>("Enemy_1");
+            var enemyState = new EnemyState();
+            enemyState.SetState(enemyModel);
+            encounterState.EnemyState = enemyState;
+            
+            var playerState = new PlayerState()
+            {
+                AvaliableTurns = 8,
+                PlayerHp = 15
+            };
+            encounterState.PlayerState = playerState;
+            return encounterState;
+        }
+        public void HideCombatUI()
+        {
+            CombatUI.SetActive(false);
         }
         public void TryChoosePlanetPosition(PlanetHandView planet)
         {
@@ -123,7 +154,7 @@ namespace Game.Src.General
         }
         public IEnumerator AdvanceAll()
         {
-            Advancing = true;
+            int CurrentSteps = 8;
             while (CurrentSteps >= 0)
             {
                 Debug.Log("Step: " + CurrentSteps);
@@ -131,7 +162,6 @@ namespace Game.Src.General
                 yield return Orbits.AdvanceTurn();
                 yield return new WaitUntil(G.Ticker.CreatePr(0.2f));
             }
-            Advancing = false;
         }
         public PlanetHandView GetRandomPlanet()
         {
@@ -160,13 +190,17 @@ namespace Game.Src.General
             return planet;
         }
 
+        public void StartTurn()
+        {
+            
+        }
         public IEnumerator DealDamageToSun(Vector3 sourcePosition, int damage, Color color)
         {
-            var textPos = SunHealthText.transform.position;
+            Encounter.State.EnemyState.EnemyHp -= damage;
+            Encounter.UpdateEverything();
+            
             G.ParticleController.SpawnAndMoveToWithDuration(0.5f, sourcePosition, Vector3.zero, color);
             yield return new WaitUntil(G.Ticker.CreatePr(0.5f));
-            SunHealth -= damage;
-            SunHealthText.text = SunHealth.ToString();
             AudioController.Instance.PlaySound2D("Sigh", 1f, 0f, new AudioParams.Pitch(AudioParams.Pitch.Variation.Small));
         }
     }

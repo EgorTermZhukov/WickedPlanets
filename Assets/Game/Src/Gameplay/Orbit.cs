@@ -11,6 +11,7 @@ namespace Game.Src.Gameplay
         public OrbitRenderer OrbitRenderer;
         
         public PlanetView Planet;
+        public GameObject FullTurnTarget;
         
         public float Radius;
 
@@ -29,6 +30,8 @@ namespace Game.Src.Gameplay
         {
             StartingStep = circumference;
             Vector3 planetPosition = CalculatePlanetPosition(circumference);
+            FullTurnTarget.SetActive(true);
+            FullTurnTarget.transform.position = planetPosition;
             
             OrbitRenderer.Notches[circumference].startColor = Color.yellow;
             
