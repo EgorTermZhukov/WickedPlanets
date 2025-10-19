@@ -8,7 +8,6 @@ namespace Game.Src.Tags
     {
         public Sprite Face;
     }
-
     [Serializable]
     public class TagShapeSprite : EntityComponentDefinition
     {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -7,6 +8,7 @@ namespace Game.Src.Gameplay
     {
         [FormerlySerializedAs("LineRenderer")] public LineRenderer CircleRenderer;
         public LineRenderer NotchPfb;
+        public List<LineRenderer> Notches;
 
         public void DrawCircle(int steps, float radius)
         {
@@ -29,10 +31,8 @@ namespace Game.Src.Gameplay
             }
         }
 
-        public void DrawNotches(float radius, float notchHalfSize)
+        public void DrawNotches(int notches, float radius, float notchHalfSize)
         {
-            int notches = (int)radius * 2;
-
             for (int currentNotch = 0; currentNotch < notches; currentNotch++)
             {
                 var lineRenderer = Instantiate(NotchPfb);
@@ -55,6 +55,9 @@ namespace Game.Src.Gameplay
                 
                 lineRenderer.SetPosition(0, new Vector3(firstPosX, firstPosY, 0f));
                 lineRenderer.SetPosition(1, new Vector3(secondPosX, secondPosY, 0f));
+
+                lineRenderer.transform.SetParent(transform);
+                Notches.Add(lineRenderer);
             }
         }
     }

@@ -1,8 +1,9 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Game.Source;
 using Game.Src.Gameplay;
+using Game.Src.Tags;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,15 +12,18 @@ namespace Game.Src.General
 {
     public class Main : MonoBehaviour
     {
-        
         public Interactor Interactor;
         public PlanetView PlanetPfb;
+        public PlanetHandView PlanetHandPfb;
         public OrbitManager Orbits;
         public Hand Hand;
 
-        public TMP_Text SunText;
+        public int StepsAvailable = 10;
+        public int CurrentSteps = 10;
 
-        public int SunAmount = 0;
+        public TMP_Text SunHealthText;
+
+        public int SunHealth = 20;
         public bool Advancing = false;
         private void Awake()
         {
@@ -30,6 +34,7 @@ namespace Game.Src.General
         private void Start()
         {
             CMS.Init();
+            AudioController.Instance.SetLoopAndPlay("SpaceAmbient");
         }
         private void Update()
         {
@@ -41,57 +46,127 @@ namespace Game.Src.General
             {
                 SceneManager.LoadScene("Scenes/Intro");
             }
-            else if (Input.GetKeyDown(KeyCode.Space))
-            {
-                StartCoroutine(Orbits.AddOrbit());
-            }
-            else if (Input.GetMouseButtonDown(0))
+
+            else if (Input.GetKeyDown(KeyCode.Q))
             {
                 var planet = GetRandomPlanet();
-                AudioController.Instance.PlaySound2D("Ahh", 0.3f, 0f, new AudioParams.Pitch(AudioParams.Pitch.Variation.Large));
-                StartCoroutine(Orbits.AddPlanetToEmptyOrbitOrCreateIt(planet));
+                Hand.Add(planet);
             }
-            else if (Input.GetMouseButtonDown(1) && !Advancing)
+            else if (Input.GetKeyDown(KeyCode.Space) && !Advancing)
             {
                 StartCoroutine(AdvanceAll());
             }
         }
-
-        public IEnumerator AdvanceAll()
+        public void TryChoosePlanetPosition(PlanetHandView planet)
         {
-            Advancing = true;
-            yield return Orbits.AdvanceTurn();
-            Advancing = false;
+            StartCoroutine(ChoosePlanetPosition(planet));
         }
-        public PlanetView GetRandomPlanet()
+        public IEnumerator ChoosePlanetPosition(PlanetHandView handViewPlanet)
+        {
+            var orbit = Orbits.GetUnoccupiedOrbit;
+            
+            if (orbit == null)
+                orbit = Orbits.AddOrbit();
+            var ghostPlanet = CreatePlanetFromState(handViewPlanet.PlanetState);
+            ghostPlanet.Ghost();
+            
+            while (true)
+            {
+                if (Input.GetMouseButtonDown(1))
+                {
+                    Destroy(ghostPlanet.gameObject);
+                    Hand.CancelPlay(handViewPlanet);
+                    yield break;
+                }
+                
+                Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                mouseWorldPosition = new Vector3(mouseWorldPosition.x, mouseWorldPosition.y);
+                var mouseDirection = mouseWorldPosition.normalized;
+
+                int circ = orbit.CalculatePlanetCircFromMouseDir(mouseDirection);
+                var position = orbit.CalculatePlanetPosition(circ);
+                Debug.Log(position);
+
+                ghostPlanet.transform.position = position;
+                
+                if (Input.GetMouseButtonDown(0))
+                {
+                    ghostPlanet.UnGhost();
+                    StartCoroutine(PlayPlanet(handViewPlanet, ghostPlanet, circ, position, orbit));
+                    yield break;
+                }
+                yield return null;
+            }
+            yield break;
+        }
+        private IEnumerator PlayPlanet(PlanetHandView handViewPlanet, PlanetView planetView, int circ, Vector3 position, Orbit orbit)
+        {
+            var state = handViewPlanet.PlanetState;
+            
+            Hand.Remove(handViewPlanet);
+            Destroy(handViewPlanet.gameObject);
+            
+            planetView.SetData(state);
+            state.View = planetView;
+            
+            G.Feel.PunchScreen(0.2f);
+            AudioController.Instance.PlaySound2D("Ahh", 0.3f, 0f, new AudioParams.Pitch(AudioParams.Pitch.Variation.Large));
+
+            yield return Orbits.AddPlanetToOrbit(planetView, circ, orbit);
+        }
+        public PlanetView CreatePlanetFromState(PlanetState planetState)
         {
             var planet = Instantiate(PlanetPfb);
             
-            var planetFaceModel = CMS.Get<CMSEntity>("CMS/Models/Planets/SadFace");
+            planet.SetData(planetState);
+            return planet;
+        }
+        public IEnumerator AdvanceAll()
+        {
+            Advancing = true;
+            while (CurrentSteps >= 0)
+            {
+                Debug.Log("Step: " + CurrentSteps);
+                CurrentSteps -= 1;
+                yield return Orbits.AdvanceTurn();
+                yield return new WaitUntil(G.Ticker.CreatePr(0.2f));
+            }
+            Advancing = false;
+        }
+        public PlanetHandView GetRandomPlanet()
+        {
+            var planet = Instantiate(PlanetHandPfb);
             
-            Debug.Log(planetFaceModel.id);
+            var planetFaceModels = CMS.GetAll<CMSEntity>().Where(x=> x.Is<TagFaceDefinition>()).ToList();
+            var planetShapeModels = CMS.GetAll<CMSEntity>().Where(x => x.Is<TagShapeDefinition>()).ToList();
+            var planetColorModels = CMS.GetAll<CMSEntity>().Where(x => x.Is<TagColorDefinition>()).ToList();
 
-            var planetState = new PlanetState();
-            planetState.View = planet;
+            var faceModel = planetFaceModels[UnityEngine.Random.Range(0, planetFaceModels.Count)];
+            var shapeModel = planetShapeModels[UnityEngine.Random.Range(0, planetShapeModels.Count)];
+            var colorModel = planetColorModels[UnityEngine.Random.Range(0, planetColorModels.Count)];
+
+            var models = new List<CMSEntity>()
+            {
+                faceModel,
+                shapeModel,
+                colorModel
+            };
             
-            planetState.CopyFromEntity(planetFaceModel);
+            var planetState = new PlanetState();
+            
+            planetState.CopyFromEntityList(models);
             
             planet.SetData(planetState);
             return planet;
         }
 
-        public void GainSun(Vector3 sourcePosition)
+        public IEnumerator DealDamageToSun(Vector3 sourcePosition, int damage, Color color)
         {
-            StartCoroutine(GainSunSequence(sourcePosition));
-        }
-
-        public IEnumerator GainSunSequence(Vector3 sourcePosition)
-        {
-            var textPos = SunText.transform.position;
-            G.ParticleController.SpawnAndMoveToWithDuration(0.2f, sourcePosition, Vector3.zero);
-            yield return new WaitUntil(G.Ticker.CreatePr(0.2f));
-            SunAmount++;
-            SunText.text = SunAmount.ToString();
+            var textPos = SunHealthText.transform.position;
+            G.ParticleController.SpawnAndMoveToWithDuration(0.5f, sourcePosition, Vector3.zero, color);
+            yield return new WaitUntil(G.Ticker.CreatePr(0.5f));
+            SunHealth -= damage;
+            SunHealthText.text = SunHealth.ToString();
             AudioController.Instance.PlaySound2D("Sigh", 1f, 0f, new AudioParams.Pitch(AudioParams.Pitch.Variation.Small));
         }
     }

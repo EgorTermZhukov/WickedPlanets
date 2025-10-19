@@ -7,9 +7,13 @@ namespace Game.Src.Tags.Colors
     public class TagColorYellow : TagColorDefinition
     {
     }
-    
     [Serializable]
     public class TagColorRed : TagColorDefinition
+    {
+        
+    }
+    [Serializable]
+    public class TagColorGreen : TagColorDefinition
     {
         
     }

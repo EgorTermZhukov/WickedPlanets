@@ -570,8 +570,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Termegus
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 58ada3d051edccab69c183013c654208, type: 2}
-  m_sharedMaterial: {fileID: 5390714651947246289, guid: 58ada3d051edccab69c183013c654208, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 37c50a7289a43d4ec921962ed329d489, type: 2}
+  m_sharedMaterial: {fileID: 12762803386251397, guid: 37c50a7289a43d4ec921962ed329d489, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -667,7 +667,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 5390714651947246289, guid: 58ada3d051edccab69c183013c654208, type: 2}
+  - {fileID: 12762803386251397, guid: 37c50a7289a43d4ec921962ed329d489, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

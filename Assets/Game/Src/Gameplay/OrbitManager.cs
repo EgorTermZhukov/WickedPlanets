@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,20 +9,30 @@ namespace Game.Src.Gameplay
 {
     public class OrbitManager : MonoBehaviour
     {
+        public GameObject Pointer;
+        
         public List<Orbit> Orbits;
         public float OrbitOffset = 2f;
+        
         public Orbit OrbitPfb;
 
-        public IEnumerator AddOrbit()
+        private void Start()
+        {
+        }
+
+        public IEnumerator RemoveAll()
+        {
+            yield break;
+        }
+        public Orbit AddOrbit()
         {
             var orbit = Instantiate(OrbitPfb, Vector3.zero, Quaternion.identity);
             Orbits.Add(orbit);
+            orbit.transform.parent = transform;
             
             float radius = Orbits.Count * OrbitOffset;
-            Debug.Log(radius);
             
             orbit.SetOrbit(radius);
-            orbit.transform.parent = transform;
             
             // if too big to see, scale map
             var camera = Camera.main;
@@ -41,26 +52,35 @@ namespace Game.Src.Gameplay
                     .SetEase(Ease.OutCubic); // Smooth easing
             }
 
-            yield break;
-
+            return orbit;
         }
-        public IEnumerator AddPlanetToEmptyOrbitOrCreateIt(PlanetView planet)
+
+        public Orbit GetUnoccupiedOrbit => Orbits.Find(x => x.Planet == null);
+
+        public IEnumerator AddPlanetToOrbit(PlanetView planet, int circ, Orbit orbit)
         {
-            var orbit = Orbits.Find(x=> x.Planet == null);
-            if(orbit == null)
-            {
-                yield return AddOrbit();
-                orbit = Orbits.Last();
-            }
-
-            orbit.ClaimPlanet(planet);
+            orbit.ClaimPlanet(circ, planet);
+            yield break;
         }
+        // public IEnumerator AddPlanetToEmptyOrbitOrCreateIt(PlanetView planet)
+        // {
+        //     var orbit = GetUnoccupiedOrbit;
+        //     if(orbit == null)
+        //     {
+        //         yield return AddOrbit();
+        //         orbit = Orbits.Last();
+        //     }
+        //
+        //     orbit.ClaimPlanet(planet);
+        // }
         public IEnumerator AdvanceTurn()
         {
+            Pointer.SetActive(true);
             foreach (var orbit in Orbits)
             {
                 yield return orbit.TryAdvance();
             }
+            Pointer.SetActive(false);
             yield break;
         }
         private float CalculateMaxAllowedRadius(Camera cam)
@@ -89,6 +109,10 @@ namespace Game.Src.Gameplay
             }
     
             return requiredSize;
+        }
+        public void MovePointerTo(Vector3 position)
+        {
+            Pointer.transform.position = position;
         }
     }
 }
